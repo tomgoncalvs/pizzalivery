@@ -70,9 +70,16 @@ export default function Sizes() {
     navigate(routes.home)
   }
 
-  const handleNext = () => {
+    const handleNext = () => {
     const selectedSize = getPizzaSize(sizeId)
     setPizzaSize(selectedSize)
+    const selectedFlavour = selectedSize[0].flavours
+    if (selectedFlavour == 2){
+      navigate(routes.pizzaFlavour)
+    } else {
+      navigate(routes.TwoFlavors)
+    }
+
     navigate(routes.pizzaFlavour)
   }
 
