@@ -23,7 +23,7 @@ import {
 } from "./Flavours.styles"
 import { Title } from "../../components/title/Title"
 
-export default function Flavours() {
+export default function TwoFlavours() {
   const navigate = useNavigate()
   const { pizzaSize, pizzaFlavour, setPizzaFlavour } = useContext(OrderContext)
   const [flavourId, setflavourId] = useState("")
