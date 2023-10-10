@@ -5,11 +5,11 @@ import { HomeWrapper } from "./Home.style"
 import { routes } from "../../routes"
 
 export default function Home() {
+  const navigate = useNavigate()
 
-    const navigate = useNavigate()
-    const handleClick = () => {
-      navigate(routes.pizzaSize)
-    }
+  const handleClick = () => {
+    navigate(routes.pizzaSize)
+  }
 
   return (
     <Layout>
