@@ -1,17 +1,11 @@
-import { useContext, useEffect, useState } from "react"
-import { useNavigate } from "react-router-dom"
-import { Button } from "../../components/button/Button"
-import { Layout } from "../../components/layout/Layout"
-import { routes } from "../../routes"
-import OrderContext from "../../contexts/OrderContext"
-
-import Mussarela from "../../assets/pizza-flavours/mucarela.png"
-import ChickenWithCheese from "../../assets/pizza-flavours/frango-catupiry.png"
-import Margherita from "../../assets/pizza-flavours/margherita.png"
-import Lusa from "../../assets/pizza-flavours/portuguesa.png"
-
-import { convertToCurrency } from "../../helpers/convertToCurrency"
-
+import React, { useContext, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "../../components/button/Button";
+import { Layout } from "../../components/layout/Layout";
+import { routes } from "../../routes";
+import flavoursOptions from "../../components/flavours/flavours";
+import OrderContext from "../../contexts/OrderContext";
+import { convertToCurrency } from "../../helpers/convertToCurrency";
 import {
   FlavourActionWrapper,
   FlavourCard,
@@ -20,104 +14,85 @@ import {
   FlavourCardPrice,
   FlavourCardTitle,
   FlavourContentWrapper,
-} from "./Flavours.styles"
-import { Title } from "../../components/title/Title"
+} from "./Flavours.styles";
+import { Title } from "../../components/title/Title";
 
 export default function TwoFlavours() {
-  const navigate = useNavigate()
-  const { pizzaSize, pizzaFlavour, setPizzaFlavour } = useContext(OrderContext)
-  const [flavourId, setflavourId] = useState("")
+  const navigate = useNavigate();
+  const { pizzaSize, pizzaFlavour, setPizzaFlavour } = useContext(OrderContext);
+  const [selectedFlavours, setSelectedFlavours] = useState(pizzaFlavour || []); // Initialize with current selections
 
-  const flavoursOptions = [
-    {
-      id: "10",
-      image: Mussarela,
-      name: "Mussarela",
-      description:
-        "Muçarela especial fresca, finalizada com orégano e azeitonas portuguesas.",
-      price: {
-        "8": 71,
-        "4": 35.5,
-        "1": 18,
-      },
-    },
-    {
-      id: "11",
-      image: ChickenWithCheese,
-      name: "Frango com catupiry",
-      description:
-        "Peito de frango cozido, desfiado e refogado em azeite de oliva e temperos naturais, anéis de cebola sobre base de muçarela especial, bacon em cubos e Catupiry® gratinado. É finalizada com orégano.",
-      price: {
-        "8": 95,
-        "4": 47.5,
-        "1": 24,
-      },
-    },
-    {
-      id: "12",
-      image: Margherita,
-      name: "Margherita",
-      description:
-        "Muçarela especial, muçarela de búfala rasgada, fatias de tomate finalizada com folhas de manjericão orgânico e um fio de azeite aromatizado.",
-      price: {
-        "8": 90,
-        "4": 45,
-        "1": 22.5,
-      },
-    },
-    {
-      id: "13",
-      image: Lusa,
-      name: "Portuguesa",
-      description:
-        "Clássica pizza, leva presunto magro, cebola, palmito e ervilha sobre base de muçarela fresca. Finalizada com cobertura de ovos, orégano e azeitonas portuguesas. ",
-      price: {
-        "8": 93,
-        "4": 46.5,
-        "1": 23.5,
-      },
-    },
-  ]
+  const getPizzaFlavour = (id) => {
+    return flavoursOptions.find((flavour) => flavour.id === id);
+  };
 
-  const getPizzaFlavour = (id: string) => {
-    return flavoursOptions.filter((flavour) => flavour.id === id)
-  }
+  const calculatePizzaPrice = (price) => {
+    return price / 2; // Divide the price by 2
+  };
 
-  const handleClick = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setflavourId(event.target.id)
-  }
+  const handleSelect = (flavour) => {
+    if (selectedFlavours.length < 2) {
+      setSelectedFlavours([...selectedFlavours, flavour]);
+    }
+  };
+
+  const handleDeselect = (flavour) => {
+    setSelectedFlavours(selectedFlavours.filter((f) => f.id !== flavour.id));
+  };
 
   const handleBack = () => {
-    navigate(routes.pizzaSize)
-  }
+    navigate(routes.pizzaSize);
+  };
 
-  const handleNext = () => {
-    const selectedFlavour = getPizzaFlavour(flavourId)
-    setPizzaFlavour(selectedFlavour)
-    navigate(routes.summary)
-  }
+  const handleSaveSelection = () => {
+    const totalPrice = selectedFlavours.reduce(
+      (total, flavour) => total + calculatePizzaPrice(flavour.price[pizzaSize[0].slices]),
+      0
+    );
 
-  useEffect(() => {
-    if (!pizzaFlavour) return
+    const payload = {}; // Inicializa um objeto vazio
 
-    setflavourId(pizzaFlavour[0].id)
-  }, [])
+    // Crie um objeto para cada sabor selecionado
+    selectedFlavours.forEach((flavour, index) => {
+      payload[`item${index + 1}`] = {
+        name: `Meia ${flavour.name}`,
+        image: flavour.image,
+        size: pizzaSize[0].text,
+        slices: pizzaSize[0].slices / 2, // Divide o tamanho pela metade
+        value: calculatePizzaPrice(flavour.price[pizzaSize[0].slices]),
+      };
+    });
+
+    payload.total = totalPrice;
+
+    setPizzaFlavour(payload);
+    navigate(routes.summary, { totalPrice: totalPrice });
+  };
 
   return (
     <Layout>
-      <Title tabIndex={0}>Agora escolha o sabor da sua pizza</Title>
+      <Title tabIndex={0}>Escolha até 2 sabores para sua pizza</Title>
       <FlavourContentWrapper>
-        {flavoursOptions.map(({ id, image, name, description, price }) => (
-          <FlavourCard key={id} selected={id === flavourId ? true : false}>
-            <FlavourCardImage src={image} alt={name} />
-            <FlavourCardTitle>{name}</FlavourCardTitle>
-            <FlavourCardDescription>{description}</FlavourCardDescription>
+        {flavoursOptions.map((flavour) => (
+          <FlavourCard
+            key={flavour.id}
+            selected={selectedFlavours.some((f) => f.id === flavour.id)}
+            onClick={() => {
+              if (selectedFlavours.some((f) => f.id === flavour.id)) {
+                handleDeselect(flavour);
+              } else {
+                handleSelect(flavour);
+              }
+            }}
+          >
+            <FlavourCardImage src={flavour.image} alt={flavour.name} />
+            <FlavourCardTitle>{`Meia ${flavour.name}`}</FlavourCardTitle>
+            <FlavourCardDescription>{flavour.description}</FlavourCardDescription>
             <FlavourCardPrice>
-              {convertToCurrency(price[pizzaSize[0].slices])}
+              {pizzaSize && pizzaSize[0]
+                ? convertToCurrency(calculatePizzaPrice(flavour.price[pizzaSize[0].slices]))
+                : ""}
             </FlavourCardPrice>
-            <Button id={id} onClick={handleClick}>
-              Selecionar
-            </Button>
           </FlavourCard>
         ))}
       </FlavourContentWrapper>
@@ -125,8 +100,8 @@ export default function TwoFlavours() {
         <Button inverse="inverse" onClick={handleBack}>
           Voltar
         </Button>
-        <Button onClick={handleNext}>Escolha o sabor</Button>
+        <Button onClick={handleSaveSelection}>Salvar Seleção</Button>
       </FlavourActionWrapper>
     </Layout>
-  )
+  );
 }

@@ -1,10 +1,10 @@
-import { useContext, useEffect, useState } from "react"
-import { useNavigate } from "react-router-dom"
-import { Layout } from "../../components/layout/Layout"
-import { routes } from "../../routes"
-import OrderContext from "../../contexts/OrderContext"
-import { Title } from "../../components/title/Title"
-import { convertToCurrency } from "../../helpers/convertToCurrency"
+import React, { useContext, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Layout } from "../../components/layout/Layout";
+import { routes } from "../../routes";
+import OrderContext from "../../contexts/OrderContext";
+import { Title } from "../../components/title/Title";
+import { convertToCurrency } from "../../helpers/convertToCurrency";
 import {
   SummaryActionWrapper,
   SummaryAmount,
@@ -14,71 +14,54 @@ import {
   SummaryImage,
   SummaryPrice,
   SummaryTitle,
-} from "./Summary.style"
-import { Button } from "../../components/button/Button"
+} from "./Summary.style";
+import { Button } from "../../components/button/Button";
 
 export default function Summary() {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
-  const { pizzaSize, pizzaFlavour, setPizzaOrder } = useContext(OrderContext)
-  const [summaryData, setSummaryData] = useState({})
-  const [summaryAmount, setSummaryAmount] = useState(0)
+  const { pizzaOrders, setPizzaOrder } = useContext(OrderContext);
+  const currentOrder = pizzaOrders[pizzaOrders.length - 1]; // Obter o pedido mais recente
+  const previousOrders = pizzaOrders.slice(0, -1); // Obter pedidos anteriores
 
   const handleBack = () => {
-    navigate(routes.pizzaFlavour)
-  }
+    navigate(routes.pizzaFlavour);
+  };
+
   const handleNext = () => {
-    const payload = {
-      item: {
-        name: summaryData.name,
-        image: summaryData.image,
-        size: summaryData.text,
-        slices: summaryData.slices,
-        value: summaryData.price,
-      },
-      total: summaryAmount,
-    }
-
-    setPizzaOrder(payload)
-    navigate(routes.checkout)
-  }
-
-  useEffect(() => {
-    if (!pizzaFlavour) {
-      return navigate(routes.pizzaSize)
-    }
-
-    if (!pizzaSize) {
-      return navigate(routes.home)
-    }
-
-    setSummaryData({
-      text: pizzaSize[0].text,
-      slices: pizzaSize[0].slices,
-      name: pizzaFlavour[0].name,
-      price: pizzaFlavour[0].price[pizzaSize[0].slices],
-      image: pizzaFlavour[0].image,
-    })
-  }, [])
-
-  useEffect(() => {
-    setSummaryAmount(summaryData.price)
-  }, [summaryAmount])
+    navigate(routes.checkout);
+  };
 
   return (
     <Layout>
       <Title tabIndex={0}>Resumo do pedido</Title>
       <SummaryContentWrapper>
-        <SummaryDetails>
-          <SummaryImage src={summaryData.image} alt="" />
-          <SummaryTitle>{summaryData.name}</SummaryTitle>
-          <SummaryDescription>
-            {summaryData.text} {`(${summaryData.slices}) pedaços`}
-          </SummaryDescription>
-          <SummaryPrice>{convertToCurrency(summaryData.price)}</SummaryPrice>
-        </SummaryDetails>
+        {currentOrder && (
+          <SummaryDetails>
+            <SummaryImage src={currentOrder.item.image} alt="" />
+            <SummaryTitle>{currentOrder.item.name}</SummaryTitle>
+            <SummaryDescription>
+              {`${currentOrder.item.size} (${currentOrder.item.slices} pedaços)`}
+            </SummaryDescription>
+            <SummaryPrice>{convertToCurrency(currentOrder.item.value)}</SummaryPrice>
+          </SummaryDetails>
+        )}
+        {previousOrders.length > 0 && (
+          <div>
+            <h2>Pedidos Anteriores</h2>
+            {previousOrders.map((order, index) => (
+              <div key={index}>
+                <p>{order.item.name}</p>
+                <p>{`${order.item.size} (${order.item.slices} pedaços)`}</p>
+                <p>{convertToCurrency(order.item.value)}</p>
+              </div>
+            ))}
+          </div>
+        )}
         <SummaryAmount>
-          <SummaryPrice>{convertToCurrency(summaryAmount)}</SummaryPrice>
+          <SummaryPrice>
+            {convertToCurrency(currentOrder ? currentOrder.total : 0)}
+          </SummaryPrice>
         </SummaryAmount>
       </SummaryContentWrapper>
       <SummaryActionWrapper>
@@ -88,5 +71,5 @@ export default function Summary() {
         <Button onClick={handleNext}>Ir para o pagamento</Button>
       </SummaryActionWrapper>
     </Layout>
-  )
+  );
 }
