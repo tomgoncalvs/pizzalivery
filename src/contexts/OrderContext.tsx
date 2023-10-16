@@ -1,15 +1,23 @@
-import { createContext, useState } from "react";
+import React, { createContext, useState, useContext } from "react";
 
+// Tipos
 type PizzaSizeType = {
-  // ... (seu tipo existente para pizzaSize)
+  text: string;
+  slices: number;
+  // Outros campos
 };
 
 type PizzaFlavourType = {
-  // ... (seu tipo existente para pizzaFlavour)
+  name: string;
+  price: { [key: number]: number };
+  image: string;
+  // Outros campos
 };
 
 type PizzaOrderType = {
-  // ... (seu tipo existente para pizzaOrders)
+  items: PizzaFlavourType[];
+  total: number;
+  // Outros campos
 };
 
 type OrderContextProps = {
@@ -19,8 +27,6 @@ type OrderContextProps = {
   setPizzaFlavour: React.Dispatch<React.SetStateAction<PizzaFlavourType[]>>;
   pizzaOrders: PizzaOrderType[];
   setPizzaOrders: React.Dispatch<React.SetStateAction<PizzaOrderType[]>>;
-  orderIndex: number;
-  setOrderIndex: React.Dispatch<React.SetStateAction<number>>;
 };
 
 const OrderContext = createContext<OrderContextProps>({
@@ -30,17 +36,15 @@ const OrderContext = createContext<OrderContextProps>({
   setPizzaFlavour: () => {},
   pizzaOrders: [],
   setPizzaOrders: () => {},
-  orderIndex: 0,
-  setOrderIndex: () => {},
 });
 
-export { OrderContext };
+export const useOrderContext = () => useContext(OrderContext);
 
+// Provedor do contexto
 const OrderContextProvider: React.FC = ({ children }) => {
   const [pizzaSize, setPizzaSize] = useState<PizzaSizeType | null>(null);
   const [pizzaFlavour, setPizzaFlavour] = useState<PizzaFlavourType[]>([]);
   const [pizzaOrders, setPizzaOrders] = useState<PizzaOrderType[]>([]);
-  const [orderIndex, setOrderIndex] = useState(0);
 
   return (
     <OrderContext.Provider
@@ -51,8 +55,6 @@ const OrderContextProvider: React.FC = ({ children }) => {
         setPizzaFlavour,
         pizzaOrders,
         setPizzaOrders,
-        orderIndex,
-        setOrderIndex,
       }}
     >
       {children}

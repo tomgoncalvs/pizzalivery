@@ -25,10 +25,11 @@ import { Title } from "../../components/title/Title";
 
 export default function Flavours() {
   const navigate = useNavigate();
-  const { pizzaSize, setPizzaFlavour, setPizzaOrders } = useContext(OrderContext);
+  const { pizzaSize, setPizzaFlavour, setPizzaOrders, orderIndex, setOrderIndex } = useContext(OrderContext);
+
   const [selectedFlavours, setSelectedFlavours] = useState([]);
   const [flavourId, setFlavourId] = useState("");
-  const [orderIndex, setOrderIndex] = useState(0); // Controla o índice do pedido no carrinho
+  const [selectedPizzaSize, setSelectedPizzaSize] = useState(null);
 
   const flavoursOptions = [
     {
@@ -105,9 +106,9 @@ export default function Flavours() {
   };
 
   const handleContinue = () => {
-    if (selectedFlavours.length > 0) {
+    if (selectedFlavours.length > 0 && selectedPizzaSize) {
       const totalValue = selectedFlavours.reduce(
-        (total, flavour) => total + flavour.price[pizzaSize[0].slices],
+        (total, flavour) => total + flavour.price[selectedPizzaSize.slices],
         0
       );
 
@@ -115,10 +116,8 @@ export default function Flavours() {
         item: {
           name: selectedFlavours.length === 1 ? "Pizza de Sabor Único" : "Pizza Meia",
           image: selectedFlavours.map((flavour) => flavour.image),
-          size: pizzaSize[0].text,
-          slices: selectedFlavours.length === 1
-            ? pizzaSize[0].slices
-            : pizzaSize[0].slices / 2,
+          size: selectedPizzaSize.text,
+          slices: selectedFlavours.length === 1 ? selectedPizzaSize.slices : selectedPizzaSize.slices / 2,
           value: selectedFlavours.length === 1 ? totalValue : totalValue / 2,
         },
         total: totalValue,
@@ -139,6 +138,7 @@ export default function Flavours() {
       if (orderIndex < selectedFlavours.length - 1) {
         // Se houver mais sabores a serem escolhidos, atualize o índice do pedido
         setOrderIndex(orderIndex + 1);
+        setFlavourId(selectedFlavours[orderIndex + 1].id);
       } else {
         navigate(routes.summary);
       }
@@ -154,6 +154,12 @@ export default function Flavours() {
     }
   }, [selectedFlavours]);
 
+  useEffect(() => {
+    if (pizzaSize) {
+      setSelectedPizzaSize(pizzaSize[0]);
+    }
+  }, [pizzaSize]);
+
   return (
     <Layout>
       <Title tabIndex={0}>Escolha o sabor da sua pizza</Title>
@@ -164,8 +170,8 @@ export default function Flavours() {
             <FlavourCardTitle>{name}</FlavourCardTitle>
             <FlavourCardDescription>{description}</FlavourCardDescription>
             <FlavourCardPrice>
-              {pizzaSize && pizzaSize[0] && pizzaSize[0].slices
-                ? convertToCurrency(price[pizzaSize[0].slices])
+              {selectedPizzaSize
+                ? convertToCurrency(price[selectedPizzaSize.slices])
                 : "Preço não disponível"}
             </FlavourCardPrice>
             <Button id={id} onClick={handleClick}>

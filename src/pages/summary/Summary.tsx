@@ -1,4 +1,4 @@
-import React, { useContext, useEffect } from "react";
+import React, { useContext, useState, useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
 import { Layout } from "../../components/layout/Layout";
 import { routes } from "../../routes";
@@ -19,49 +19,104 @@ import { Button } from "../../components/button/Button";
 
 export default function Summary() {
   const navigate = useNavigate();
+  const {
+    pizzaSize,
+    pizzaFlavour,
+    pizzaOrders,
+    setPizzaOrders,
+    orderIndex,
+    setOrderIndex,
+    orders,
+    setOrders,
 
-  const { pizzaOrders, setPizzaOrder } = useContext(OrderContext);
-  const currentOrder = pizzaOrders[pizzaOrders.length - 1]; // Obter o pedido mais recente
-  const previousOrders = pizzaOrders.slice(0, -1); // Obter pedidos anteriores
+  } = useContext(OrderContext);
+
+  const [summaryData, setSummaryData] = useState([]);
+  const [summaryAmount, setSummaryAmount] = useState(0);
 
   const handleBack = () => {
     navigate(routes.pizzaFlavour);
   };
 
   const handleNext = () => {
-    navigate(routes.checkout);
+    if (summaryData.length > 0) {
+      const totalAmount = summaryData.reduce((total, item) => total + item.price, 0);
+
+      // Crie um novo pedido com os itens de resumo
+      const newOrder = {
+        items: [...summaryData],
+        total: totalAmount,
+      };
+
+      // Adicione o novo pedido ao contexto
+      setPizzaOrders((prevOrders) => [
+        ...prevOrders,
+        { ...newOrder, index: orderIndex },
+      ]);
+
+      // Atualize o índice do pedido atual
+      setOrderIndex(orderIndex + 1);
+
+      // Limpe as seleções atuais
+      setSummaryData([]);
+      setSummaryAmount(0);
+
+      navigate(routes.checkout);
+    } else {
+      // Trate a situação quando nenhum sabor foi selecionado
+      // Você pode exibir uma mensagem de erro ou tomar outra ação apropriada
+    }
   };
+
+  const handleAddAnotherPizza = () => {
+    if (pizzaFlavour) {
+      const flavor = pizzaFlavour[0];
+      const price = flavor.price[pizzaSize[0].slices];
+      const newProduct = {
+        text: pizzaSize[0].text,
+        slices: pizzaSize[0].slices,
+        name: flavor.name,
+        price: price,
+        image: flavor.image,
+      };
+
+      // Adicione o novo produto ao resumo existente
+      setSummaryData([...summaryData, newProduct]);
+
+      // Atualize o total do resumo
+      setSummaryAmount((prevAmount) => prevAmount + price);
+    }
+
+    // Redefina as seleções de sabor e tamanho para a próxima pizza
+    navigate(routes.pizzaSize);
+  };
+
+  useEffect(() => {
+    if (!pizzaFlavour) {
+      navigate(routes.pizzaFlavour);
+    }
+
+    if (!pizzaSize) {
+      navigate(routes.home);
+    }
+  }, [pizzaSize, pizzaFlavour]);
 
   return (
     <Layout>
       <Title tabIndex={0}>Resumo do pedido</Title>
       <SummaryContentWrapper>
-        {currentOrder && (
-          <SummaryDetails>
-            <SummaryImage src={currentOrder.item.image} alt="" />
-            <SummaryTitle>{currentOrder.item.name}</SummaryTitle>
+        {summaryData.map((flavor, index) => (
+          <SummaryDetails key={index}>
+            <SummaryImage src={flavor.image} alt={flavor.name} />
+            <SummaryTitle>{flavor.name}</SummaryTitle>
             <SummaryDescription>
-              {`${currentOrder.item.size} (${currentOrder.item.slices} pedaços)`}
+              {`${flavor.text} (${flavor.slices} pedaços)`}
             </SummaryDescription>
-            <SummaryPrice>{convertToCurrency(currentOrder.item.value)}</SummaryPrice>
+            <SummaryPrice>{convertToCurrency(flavor.price)}</SummaryPrice>
           </SummaryDetails>
-        )}
-        {previousOrders.length > 0 && (
-          <div>
-            <h2>Pedidos Anteriores</h2>
-            {previousOrders.map((order, index) => (
-              <div key={index}>
-                <p>{order.item.name}</p>
-                <p>{`${order.item.size} (${order.item.slices} pedaços)`}</p>
-                <p>{convertToCurrency(order.item.value)}</p>
-              </div>
-            ))}
-          </div>
-        )}
+        ))}
         <SummaryAmount>
-          <SummaryPrice>
-            {convertToCurrency(currentOrder ? currentOrder.total : 0)}
-          </SummaryPrice>
+          <SummaryPrice>{convertToCurrency(summaryAmount)}</SummaryPrice>
         </SummaryAmount>
       </SummaryContentWrapper>
       <SummaryActionWrapper>
@@ -69,7 +124,27 @@ export default function Summary() {
           Voltar
         </Button>
         <Button onClick={handleNext}>Ir para o pagamento</Button>
+        <Button onClick={handleAddAnotherPizza}>Adicionar outra pizza</Button>
       </SummaryActionWrapper>
+
+      <div>
+        <h2>Histórico de Pedidos</h2>
+        <ul>
+          {pizzaOrders.map((order, index) => (
+            <li key={index}>
+              <strong>Pedido {order.index}:</strong>
+              <ul>
+                {order.items.map((item, i) => (
+                  <li key={i}>
+                    {item.name} - {item.size} - {item.slices} pedaços - Preço: {item.price}
+                  </li>
+                ))}
+              </ul>
+              <p>Total: {order.total}</p>
+            </li>
+          ))}
+        </ul>
+      </div>
     </Layout>
   );
 }

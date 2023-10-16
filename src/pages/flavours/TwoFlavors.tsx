@@ -5,7 +5,9 @@ import { Layout } from "../../components/layout/Layout";
 import { routes } from "../../routes";
 import flavoursOptions from "../../components/flavours/flavours";
 import OrderContext from "../../contexts/OrderContext";
+
 import { convertToCurrency } from "../../helpers/convertToCurrency";
+
 import {
   FlavourActionWrapper,
   FlavourCard,
@@ -19,55 +21,80 @@ import { Title } from "../../components/title/Title";
 
 export default function TwoFlavours() {
   const navigate = useNavigate();
-  const { pizzaSize, pizzaFlavour, setPizzaFlavour } = useContext(OrderContext);
-  const [selectedFlavours, setSelectedFlavours] = useState(pizzaFlavour || []); // Initialize with current selections
+  const { pizzaSize, pizzaFlavour, setPizzaFlavour, pizzaOrders, setPizzaOrders } = useContext(
+    OrderContext
+  );
+  const [selectedFlavours, setSelectedFlavours] = useState([]);
 
   const getPizzaFlavour = (id) => {
     return flavoursOptions.find((flavour) => flavour.id === id);
-  };
+  }
 
   const calculatePizzaPrice = (price) => {
-    return price / 2; // Divide the price by 2
-  };
+    // Divide o preço por 2
+    return price / 2;
+  }
 
   const handleSelect = (flavour) => {
     if (selectedFlavours.length < 2) {
       setSelectedFlavours([...selectedFlavours, flavour]);
     }
-  };
+  }
 
   const handleDeselect = (flavour) => {
     setSelectedFlavours(selectedFlavours.filter((f) => f.id !== flavour.id));
-  };
+  }
 
   const handleBack = () => {
     navigate(routes.pizzaSize);
-  };
+  }
 
   const handleSaveSelection = () => {
+    // Calcula o preço total das duas pizzas
     const totalPrice = selectedFlavours.reduce(
       (total, flavour) => total + calculatePizzaPrice(flavour.price[pizzaSize[0].slices]),
       0
     );
 
-    const payload = {}; // Inicializa um objeto vazio
-
-    // Crie um objeto para cada sabor selecionado
-    selectedFlavours.forEach((flavour, index) => {
-      payload[`item${index + 1}`] = {
-        name: `Meia ${flavour.name}`,
-        image: flavour.image,
-        size: pizzaSize[0].text,
-        slices: pizzaSize[0].slices / 2, // Divide o tamanho pela metade
-        value: calculatePizzaPrice(flavour.price[pizzaSize[0].slices]),
+    // Verifica se já existem dados no carrinho (pizzaOrders)
+    if (pizzaOrders && pizzaOrders.length > 0) {
+      // Crie um novo objeto para a nova seleção e adicione ao carrinho
+      const newPizzaOrder = {
+        item: {
+          name: "Pedido de Pizza",
+          image: selectedFlavours.map((flavour) => flavour.image),
+          size: pizzaSize[0].text,
+          slices: pizzaSize[0].slices / 2,
+          value: totalPrice / 2,
+        },
+        total: totalPrice / 2,
       };
-    });
+      setPizzaOrders([...pizzaOrders, newPizzaOrder]);
+    } else {
+      // Se o carrinho estiver vazio, adicione a nova seleção como o primeiro item
+      setPizzaOrders([
+        {
+          item: {
+            name: "Pedido de Pizza",
+            image: selectedFlavours.map((flavour) => flavour.image),
+            size: pizzaSize[0].text,
+            slices: pizzaSize[0].slices / 2,
+            value: totalPrice / 2,
+          },
+          total: totalPrice / 2,
+        },
+      ]);
+    }
 
-    payload.total = totalPrice;
+    setPizzaFlavour(selectedFlavours);
+    navigate(routes.summary, { totalPrice: totalPrice / 2 });
+  }
 
-    setPizzaFlavour(payload);
-    navigate(routes.summary, { totalPrice: totalPrice });
-  };
+  useEffect(() => {
+    if (pizzaFlavour) {
+      setSelectedFlavours(pizzaFlavour);
+    }
+  }, [pizzaFlavour]);
 
   return (
     <Layout>
